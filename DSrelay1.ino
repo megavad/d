@@ -4,15 +4,14 @@
 
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
-#define contour_banya 13//pin d12
-#define contour_house 12 //pin d13
+#define contour_banya 13//pin d13
+#define contour_Buderus 12 //pin d12
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-//OneWire oneWire(ONE_WIRE_BUS);
-//DallasTemperature sensors(&oneWire);
+
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-class Contour{
+/*class Contour{
   friend class DallasTemperature;
   float ContTemp;
   int SetPoint;
@@ -28,8 +27,8 @@ class Contour{
   int IO,//адрес исполнительного механизма - реле, насоса, реле и насоса, например - D12 - pin 12
   int ContourLength, //длина контура, влияет на скорость прокачивания контура, труба 20мм, внутренний диаметр 12, объём на метр = 0,012 м3 воды
   int BuildClass,//класс энергоэффективности здания
-  /*пусть классы энергоэффективности делятся от 0 до 5, 5 - наивысший класс, 0 - наинизший
-  */
+  //пусть классы энергоэффективности делятся от 0 до 5, 5 - наивысший класс, 0 - наинизший
+ 
   int HeatDissipValue,//сколько секций какой мощности (1.8 ватт на каждую секцию в здании класса BuildClass) Heat Dissipation Value
   int TempMax, //максимальная температура контура  int TempMax, //максимальная температура контура
   int TemperatureHyst,//гистерезис допустимых температур, например - дома с 7 до 8 температура может быть от (TempMax=)24 до 22 *С, гистерезис = 2*С
@@ -42,7 +41,7 @@ class Contour{
   }
   void Update(){
     unsigned long currentMillis = millis();
-   // ContTemp = DallasTemperature::getTempC(adr);
+//    ContTemp = DallasTemperature::getTempC(adr);
     //pinMode(A5, INPUT);
 //    if (ContTemp>0)
     previousMillis = currentMillis;
@@ -53,7 +52,7 @@ class Contour{
    
 };
 int Contour::contourCount = 0;//счётчик контуров обнулен
-
+*/
 // Pass our oneWire reference to Dallas Temperature. 
 
 
@@ -79,7 +78,7 @@ int Contour::contourCount = 0;//счётчик контуров обнулен
  DeviceAddress BanyaAdr   = {0x28, 0x8E, 0xF4, 0xA9, 0x04, 0x00, 0x00, 0xFA};
  DeviceAddress StreetAdr  = {0x28, 0xC8, 0x22, 0x3A, 0x03, 0x00, 0x00, 0xEC};
  DeviceAddress ObratkaAdr = {0x28, 0x87, 0x30, 0x3A, 0x03, 0x00, 0x00, 0x42};
- Contour HouseC(HouseAdr, contour_house, 12/*адрес ножки контроллера*/, 3/*энергоэффективность*/, 16 /*секций*/,23/*макс.темп.контура*/,2/*hysteresis*/,18/*min.Temp*/,4183,10);
+ Contour HouseC(HouseAdr, contour_Buderus, 12/*адрес ножки контроллера*/, 3/*энергоэффективность*/, 16 /*секций*/,23/*макс.темп.контура*/,2/*hysteresis*/,18/*min.Temp*/,4183,10);
 void setup(void)
 {
   //pinMode(RXLED, OUTPUT);  // Set RX LED as an VALVE STATE LED - no serial!
@@ -92,9 +91,9 @@ void setup(void)
 
   Serial.println("Dallas Temperature IC Control Library Demo");
   pinMode(contour_banya, OUTPUT);
+  pinMode(contour_Buderus, OUTPUT);
   digitalWrite(contour_banya, STOP);
-  digitalWrite(contour_house, STOP);
-  pinMode(contour_house, OUTPUT);
+  digitalWrite(contour_Buderus, STOP);
   pinMode(A5, INPUT);
   Serial.print("Found ");
   Serial.print(sensors.getDeviceCount(), DEC);
@@ -140,26 +139,26 @@ void loop(void)
   Serial.print(',');
   Serial.print(Obratka);
   Serial.print(',');
-  Serial.println(digitalRead(contour_banya)*50+5);
-  //Serial.print(',');//клапан и насос работают синхронно на контуре бани
-  //Serial.println(digitalRead(contour_house)*50+5);//нет насоса - нет значения!
+  Serial.print(digitalRead(contour_banya)*50+5);
+  Serial.print(',');
+  Serial.println(digitalRead(contour_Buderus)*50+5);//Активация контура котла, горелки
   
-  if ((Banya<22)&&(House>22)){
+  if ((Banya<22)&&(House>23)){
     //we should heat the banya
     digitalWrite(contour_banya, RUN);//open 
-    //digitalWrite(contour_house, STOP); //stop pump - не используется, пока нет насоса на контур дома
+    digitalWrite(contour_Buderus, RUN); //stop pump - не используется, пока нет насоса на контур дома
     } 
 
-  if (House<22){//home less than 23
+  if (House<22){
     digitalWrite(contour_banya, STOP);//close valve
-   // digitalWrite(contour_house, RUN); //stop pump не используется, пока нет второго насоса на контур дома
-    } 
-   if (House>23){
-    //digitalWrite(contour_house, STOP); //stop pump, температуру регулирует котельная автоматика, пока нет насоса - контур не останавливаем.
+    digitalWrite(contour_Buderus, RUN); //stop pump не используется, пока нет второго насоса на контур дома
+   } 
+   if (Banya>23){
+     digitalWrite(contour_banya, STOP); //stop pump, температуру регулирует котельная автоматика, пока нет насоса - контур не останавливаем.
    }
    
-   if (Banya>24){
-     digitalWrite(contour_banya, STOP);
+   if ((Banya>22)&&(House>23)){
+     digitalWrite(contour_Buderus, STOP);
    }
    
    
